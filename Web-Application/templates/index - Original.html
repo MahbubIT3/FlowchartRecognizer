@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title>Flowchart Recognizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .header {
+            background-color: #f8f9fa;
+            text-align: center;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            background-color: #ff6700;
+            color: #fff;
+            padding: 10px 20px;
+        }
+        
+        .background {
+            background-color: #e4e4e4;
+            padding: 20px;
+        }
+        
+        form {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        input[type="file"] {
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 10px;
+        }
+        
+        button[type="submit"] {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .detected-image {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            max-width: 800px;
+            max-height: 600px;
+        }
+        
+        .download-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            display: none;
+            text-align: center;
+        }
+        
+        .spinner.show {
+            display: block;
+        }
+        
+        @media (max-width: 576px) {
+            .header h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+            
+            .detected-image {
+                max-width: 100%;
+                max-height: 400px;
+            }
+            
+            .table-responsive {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Handwritten Flowchart Recognizer</h1>
+        </div>
+        <div class="background">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="image">Select an image:</label>
+                    <input type="file" class="form-control-file" id="image" name="image">
+                </div>
+                <button type="submit" class="btn btn-primary" id="detect-btn">Detect</button>
+                <div class="spinner" id="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </form>
+            
+            {% if image_with_detections %}
+                <h2>Detected Image:</h2>
+                <img src="{% static 'images/image_with_detections.jpg' %}" alt="Detected Image" class="detected-image">
+                <div class="download-link">
+                    <a href="{% static 'images/image_with_detections.jpg' %}" download class="btn btn-primary">Download Detected Image</a>
+                </div>
+                
+                <div>
+                    <div>
+                        <h3>Class Frequencies:</h3>
+                        <ul>
+                            {% for class_label, frequency in class_frequencies %}
+                                <li>{{ class_label }}: {{ frequency }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <h3>Total Number of Classes: {{ detected_objects|length }}</h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <th>Class</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for obj in detected_objects %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ obj.class }}</td>
+                                        <td>{{ obj.confidence }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3">No objects with confidence > 0.8</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('detect-btn').addEventListener('click', function() {
+            document.getElementById('loading-spinner').classList.add('show');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+{% load static %}
+<html>
+<head>
+    <title>Flowchart Recognizer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        
+        header {
+            background-color: #ff6700;
+            color: #fff;
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        {% comment %} .background {
+            background-color: #e4e4e4;
+            padding: 20px;
+        } {% endcomment %}
+        .back-to-home-button {
+            display: block;
+            margin-top: 10px;
+            text-align: left; /* Change this line */
+            background-color: #0F118F;
+            color: #fff;
+            padding: 10px 20px;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 170px;
+        }
+        
+    
+        .back-to-home-button:hover {
+            background-color: #1F039E;
+            text-decoration: none;
+            color: #FFFFFF;
+        }
+
+        form {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .form-group{
+            display: none;
+        }
+        
+        .drop-zone {
+            width: 50%;
+            margin: 0 auto; /* Center the element horizontally */
+            border: 2px dashed #007bff;
+            border-radius: 5px;
+            padding: 50px;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 50px;
+        }
+
+        /* Highlight the drop zone when dragging over it */
+        .drop-zone.drag-over {
+            background-color: #f0f0f0;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin: 0 auto;
+            margin-bottom: 10px;
+        }
+        
+        button[type="submit"] {
+            display: block;
+            margin: 0 auto;
+            padding: 10px 20px;
+        }
+        
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .detected-image {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+            max-width: 800px;
+            max-height: 600px;
+        }
+        
+        .download-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .spinner {
+            display: none;
+            text-align: center;
+        }
+        
+        .spinner.show {
+            display: block;
+        }
+        
+        @media (max-width: 576px) {
+            .header h1 {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+            
+            .detected-image {
+                max-width: 100%;
+                max-height: 400px;
+            }
+            
+            .table-responsive {
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Handwritten Flowchart Recognizer</h1>
+    </header>
+    <div class="container">
+        <div class="background">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="image">Select an image:</label>
+                    <input type="file" class="form-control-file" id="image" name="image">
+                </div>
+                
+                <div class="drop-zone" id="drop-zone">
+                    <p>Drag and drop an image here or click to select one.</p>
+                    <input type="file" class="form-control-file" id="image" name="image" style="display: none;">
+                </div>
+                <div id="selected-image" style="display: none;">
+                    <img id="preview-image" src="" alt="Selected Image" class="detected-image">
+                    <p id="image-name"></p>
+                </div>
+                <a href="index.html" class="back-to-home-button">
+                    <i class="fa fa-home"></i> Back to Home
+                </a>
+                <button type="submit" class="btn btn-primary" id="detect-btn">Detect</button>
+                <div class="spinner" id="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </form>
+            
+            {% if image_with_detections %}
+                <h2>Detected Image:</h2>
+                <img src="{% static 'images/image_with_detections.jpg' %}" alt="Detected Image" class="detected-image">
+                <div class="download-link">
+                    <a href="{% static 'images/image_with_detections.jpg' %}" download class="btn btn-primary">Download Detected Image</a>
+                </div>
+                
+                <div>
+                    <div>
+                        <h3>Class Frequencies:</h3>
+                        <ul>
+                            {% for class_label, frequency in class_frequencies %}
+                                <li>{{ class_label }}: {{ frequency }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <h3>Total Number of Classes: {{ detected_objects|length }}</h3>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <th>Class</th>
+                                    <th>Confidence</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for obj in detected_objects %}
+                                    <tr>
+                                        <td>{{ forloop.counter }}</td>
+                                        <td>{{ obj.class }}</td>
+                                        <td>{{ obj.confidence }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3">No objects with confidence > 0.85</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+    <script>
+        document.getElementById('detect-btn').addEventListener('click', function() {
+            document.getElementById('loading-spinner').classList.add('show');
+        });
+
+        // Add a function to handle the file selection
+        function handleFileSelect(event) {
+            event.preventDefault();
+            const fileInput = document.querySelector('#image');
+            fileInput.click();
+        }
+
+        // Add a function to handle file drop
+        function handleFileDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.querySelector('#image');
+
+            dropZone.classList.remove('drag-over');
+
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+            }
+        }
+
+        // Add event listeners for drag and drop
+        const dropZone = document.getElementById('drop-zone');
+        dropZone.addEventListener('dragenter', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        dropZone.addEventListener('dragleave', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', handleFileDrop);
+        dropZone.addEventListener('click', handleFileSelect);
+
+        document.getElementById('image').addEventListener('change', function () {
+    const fileInput = this;
+    const selectedImageDiv = document.getElementById('selected-image');
+    const previewImage = document.getElementById('preview-image');
+    const imageName = document.getElementById('image-name');
+
+    if (fileInput.files && fileInput.files[0]) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            previewImage.src = e.target.result;
+            imageName.textContent = 'Selected Image: ' + fileInput.files[0].name;
+            selectedImageDiv.style.display = 'block';
+        };
+
+        reader.readAsDataURL(fileInput.files[0]);
+    }
+});
+    </script>
+</body>
+</html>

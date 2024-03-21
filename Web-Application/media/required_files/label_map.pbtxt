@@ -1,0 +1,24 @@
+item { 
+	name:'Arrow'
+	id:1
+}
+item { 
+	name:'Decision'
+	id:2
+}
+item { 
+	name:'Input_Output'
+	id:3
+}
+item { 
+	name:'Process'
+	id:4
+}
+item { 
+	name:'Terminal'
+	id:5
+}
+item { 
+	name:'Text'
+	id:6
+}
